@@ -5,9 +5,19 @@
 
 # GitDiagram
 
+**Version 1.1.0** - August 22, 2025 Update
+
 Turn any GitHub repository into an interactive diagram for visualization in seconds.
 
-[Read the main README in Korean](./README.md)
+[Read the main README in Korean](./README.md) | [CHANGELOG](./CHANGELOG.md)
+
+## 🎉 Latest Updates (v1.1.0)
+- **Full Mermaid v11.4.1 Compatibility**: Completely resolved "Syntax error" issues
+- **Major Stability Improvements**: Fixed HTTP2 protocol errors and JSON parsing issues
+- **Smart Auto-Fix System**: Automatic detection and correction of syntax errors
+- **Enhanced Error Handling**: Clear error messages and recovery mechanisms
+
+See [CHANGELOG.md](./CHANGELOG.md) for detailed changes.
 
 You can also replace `hub` with `diagram` in any Github URL to access its diagram.
 
@@ -39,9 +49,17 @@ I extract information from the file tree and README for details and interactivit
 
 Most of what you might call the "processing" of this app is done with prompt engineering - see `/backend/app/prompts.py`. This basically extracts and pipelines data and analysis for a larger action workflow, ending in the diagram code.
 
-Notes on stability and correctness:
-- Mermaid v11.4.1 syntax is enforced in the prompts. Only supported diagram types are allowed; fall back to `graph TD` when unsure.
-- Frontend proxies generation/cost requests via Next.js API routes (`/api/generate/*`) to the FastAPI backend to avoid mixed-content and dev networking issues.
+### 🛡️ Quality Assurance System (v1.1.0 New)
+- **Real-time Syntax Validation**: Automatic verification of generated Mermaid code for v11.4.1 compatibility
+- **Auto-Fix Functionality**: Automatic correction of common syntax errors (quotes, spacing, special characters, etc.)
+- **Regeneration Mechanism**: Re-generation with stricter prompts when errors cannot be auto-fixed
+- **Comprehensive Logging**: Complete error tracking system for debugging
+
+### Notes on Stability and Correctness
+- **Mermaid v11.4.1 syntax is strictly enforced** in the prompts with automatic validation
+- Only supported diagram types are allowed; fall back to `graph TD` when unsure
+- **Advanced error recovery**: Multiple layers of validation and correction
+- Frontend proxies generation/cost requests via Next.js API routes (`/api/generate/*`) to the FastAPI backend to avoid mixed-content and dev networking issues
 
 ## 🔒 How to diagram private repositories
 

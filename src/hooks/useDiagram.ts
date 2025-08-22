@@ -20,6 +20,10 @@ interface StreamState {
     | "diagram_sent"
     | "diagram"
     | "diagram_chunk"
+    | "diagram_fixing"
+    | "diagram_fixed"
+    | "diagram_regenerating"
+    | "diagram_retry_chunk"
     | "complete"
     | "error";
   message?: string;
@@ -64,11 +68,13 @@ export function useDiagram(username: string, repo: string) {
 
       try {
   // Use Next.js API route for streaming to avoid direct backend calls
-  const response = await fetch(`/api/generate/stream`, {
+  // Send the request
+        const response = await fetch("/api/generate/stream", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
+          signal: AbortSignal.timeout(300000), // 5 minute timeout
           body: JSON.stringify({
             username,
             repo,
@@ -103,8 +109,27 @@ export function useDiagram(username: string, repo: string) {
               // Process each SSE message
               for (const line of lines) {
                 if (line.startsWith("data: ")) {
+                  const dataContent = line.slice(6).trim();
+                  
+                  // Check for SSE termination
+                  if (dataContent === "[DONE]") {
+                    return;
+                  }
+                  
                   try {
-                    const data = JSON.parse(line.slice(6)) as StreamResponse;
+                    // Skip empty or incomplete JSON data
+                    if (!dataContent || dataContent === '' || !dataContent.startsWith('{')) {
+                      continue;
+                    }
+                    
+                    // Check if JSON is complete (basic check for balanced braces)
+                    const openBraces = (dataContent.match(/\{/g) || []).length;
+                    const closeBraces = (dataContent.match(/\}/g) || []).length;
+                    if (openBraces !== closeBraces) {
+                      continue;
+                    }
+                    
+                    const data = JSON.parse(dataContent) as StreamResponse;
 
                     // If we receive an error, set loading to false immediately
                     if (data.error) {
@@ -177,6 +202,33 @@ export function useDiagram(username: string, repo: string) {
                         }));
                         break;
                       case "diagram_chunk":
+                        if (data.chunk) {
+                          diagram += data.chunk;
+                          setState((prev) => ({ ...prev, diagram }));
+                        }
+                        break;
+                      case "diagram_fixing":
+                        setState((prev) => ({
+                          ...prev,
+                          status: "diagram_fixing",
+                          message: data.message,
+                        }));
+                        break;
+                      case "diagram_fixed":
+                        setState((prev) => ({
+                          ...prev,
+                          status: "diagram_fixed",
+                          message: data.message,
+                        }));
+                        break;
+                      case "diagram_regenerating":
+                        setState((prev) => ({
+                          ...prev,
+                          status: "diagram_regenerating",
+                          message: data.message,
+                        }));
+                        break;
+                      case "diagram_retry_chunk":
                         if (data.chunk) {
                           diagram += data.chunk;
                           setState((prev) => ({ ...prev, diagram }));

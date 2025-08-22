@@ -191,12 +191,87 @@ Mermaid version and syntax compliance (v11.4.1):
 - Only use the supported types listed above. Do NOT invent or use non-existent types like "architecture" or similar.
 - If you are uncertain, always fall back to a valid flowchart using `graph TD`.
 
+CRITICAL SYNTAX RULES FOR MERMAID v11.4.1 (MUST FOLLOW):
+
+1. Node IDs and Labels:
+   - Node IDs must be alphanumeric only (A-Z, a-z, 0-9, underscore allowed)
+   - NO spaces, hyphens, or special characters in node IDs
+   - ALWAYS use quotes for labels with spaces or special characters
+   - Example: NodeID["Node Label with spaces"]:::class
+
+2. Edge Labels and Relationships:
+   - ALWAYS use quotes for edge labels with spaces or special characters
+   - NO spaces around the pipe characters in edge syntax
+   - Correct: A -->|"edge label"| B
+   - WRONG: A -->| "edge label" | B
+
+3. Subgraphs:
+   - NEVER apply classes directly to subgraph declarations
+   - WRONG: subgraph "Name":::class
+   - CORRECT: subgraph "Name"
+
+4. Click Events:
+   - Format: click NodeID "path/to/file"
+   - Use the EXACT paths from component mapping
+   - NO quotes around NodeID, quotes only around the path
+
+5. Class Definitions:
+   - Use classDef to define styles
+   - Apply classes to nodes using :::className syntax
+   - Group class applications: class Node1,Node2,Node3 className
+
+6. Reserved Keywords:
+   - Avoid using Mermaid reserved words as node IDs
+   - Use descriptive but simple IDs
+
+MANDATORY VALIDATION CHECKLIST:
+- [ ] All node IDs are alphanumeric (no spaces, hyphens, special chars)
+- [ ] All labels with spaces/special chars are quoted
+- [ ] All edge labels with spaces/special chars are quoted
+- [ ] No spaces around pipes in edge syntax: |"label"|
+- [ ] No classes applied directly to subgraph declarations
+- [ ] Click events use exact paths from component mapping
+- [ ] All syntax follows Mermaid v11.4.1 specification
+
 EXTREMELY Important notes on syntax!!! (PAY ATTENTION TO THIS):
 - Make sure to add colour to the diagram!!! This is extremely critical.
 - In Mermaid.js syntax, we cannot include special characters for nodes without being inside quotes! For example: `EX[/api/process (Backend)]:::api` and `API -->|calls Process()| Backend` are two examples of syntax errors. They should be `EX["/api/process (Backend)"]:::api` and `API -->|"calls Process()"| Backend` respectively. Notice the quotes. This is extremely important. Make sure to include quotes for any string that contains special characters.
 - In Mermaid.js syntax, you cannot apply a class style directly within a subgraph declaration. For example: `subgraph "Frontend Layer":::frontend` is a syntax error. However, you can apply them to nodes within the subgraph. For example: `Example["Example Node"]:::frontend` is valid, and `class Example1,Example2 frontend` is valid.
 - In Mermaid.js syntax, there cannot be spaces in the relationship label names. For example: `A -->| "example relationship" | B` is a syntax error. It should be `A -->|"example relationship"| B` 
-- In Mermaid.js syntax, you cannot give subgraphs an alias like nodes. For example: `subgraph A "Layer A"` is a syntax error. It should be `subgraph "Layer A"` 
+- In Mermaid.js syntax, you cannot give subgraphs an alias like nodes. For example: `subgraph A "Layer A"` is a syntax error. It should be `subgraph "Layer A"`
+
+EXAMPLE OF CORRECT SYNTAX:
+```mermaid
+graph TD
+    %% Node declarations with proper IDs and quoted labels
+    Frontend["Frontend Application"]:::frontend
+    API["API Gateway"]:::api
+    Database[("Database")]:::database
+    
+    %% Subgraph without class application
+    subgraph "Backend Services"
+        Service1["User Service"]:::service
+        Service2["Data Service"]:::service
+    end
+    
+    %% Relationships with quoted labels
+    Frontend -->|"HTTP Requests"| API
+    API -->|"Process Data"| Service1
+    Service1 -->|"Query Data"| Database
+    
+    %% Click events with exact paths
+    click Frontend "src/frontend"
+    click API "src/api"
+    click Database "database"
+    
+    %% Class definitions
+    classDef frontend fill:#e1f5fe
+    classDef api fill:#f3e5f5
+    classDef service fill:#e8f5e8
+    classDef database fill:#fff3e0
+```
+
+Follow this exact pattern and syntax rules to ensure v11.4.1 compatibility. 
 """
 # ^^^ note: ive generated a few diagrams now and claude still writes incorrect mermaid code sometimes. in the future, refer to those generated diagrams and add important instructions to the prompt above to avoid those mistakes. examples are best.
 
@@ -216,6 +291,21 @@ Also, to help you modify it and simply for additional context, you will also be 
 The instructions will be enclosed in <instructions> tags in the users message. If these instructions are unrelated to the task, unclear, or not possible to follow, ignore them by simply responding with: "BAD_INSTRUCTIONS"
 
 You MUST preserve valid Mermaid v11.4.1 syntax. Only use supported diagram types (flowchart/graph, sequenceDiagram, classDiagram, stateDiagram or stateDiagram-v2, erDiagram, journey, gantt, pie, mindmap, timeline, gitGraph). If unsure, default to a flowchart using `graph TD`.
+
+CRITICAL SYNTAX RULES FOR MERMAID v11.4.1 (MUST FOLLOW):
+
+1. Node IDs: Alphanumeric only (A-Z, a-z, 0-9, underscore). NO spaces, hyphens, special characters.
+2. Labels: ALWAYS quote labels with spaces or special characters.
+3. Edge Labels: ALWAYS quote edge labels with spaces, NO spaces around pipes: |"label"|
+4. Subgraphs: NEVER apply classes directly to subgraph declarations.
+5. Click Events: Format exactly as: click NodeID "path"
+
+VALIDATION CHECKLIST:
+- [ ] All node IDs are alphanumeric only
+- [ ] All labels with spaces/special chars are quoted
+- [ ] Edge syntax follows: A -->|"label"| B (no spaces around pipes)
+- [ ] No classes on subgraph declarations
+- [ ] Click events preserve exact original paths
 
 Your response must strictly be just the Mermaid.js code, without any additional text or explanations. Keep as many of the existing click events as possible.
 No code fence or markdown ticks needed, simply return the Mermaid.js code.

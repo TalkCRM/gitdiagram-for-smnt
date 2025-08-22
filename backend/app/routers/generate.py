@@ -9,6 +9,7 @@ from app.prompts import (
     SYSTEM_THIRD_PROMPT,
     ADDITIONAL_SYSTEM_INSTRUCTIONS_PROMPT,
 )
+from app.utils.mermaid_validator import MermaidValidator, fix_common_mermaid_issues
 from anthropic._exceptions import RateLimitError
 from pydantic import BaseModel
 from functools import lru_cache
@@ -242,6 +243,54 @@ async def generate_stream(request: Request, body: ApiRequest):
                     yield f"data: {json.dumps({'error': 'Invalid or unclear instructions provided'})}\n\n"
                     return
 
+                # Validate and fix the generated mermaid code
+                validator = MermaidValidator()
+                is_valid, errors, warnings = validator.validate(mermaid_code)
+                
+                if not is_valid:
+                    # Try to auto-fix common issues
+                    yield f"data: {json.dumps({'status': 'diagram_fixing', 'message': 'Auto-fixing Mermaid syntax issues...'})}\n\n"
+                    fixed_code = fix_common_mermaid_issues(mermaid_code)
+                    is_valid_fixed, errors_fixed, warnings_fixed = validator.validate(fixed_code)
+                    
+                    if is_valid_fixed:
+                        mermaid_code = fixed_code
+                        yield f"data: {json.dumps({'status': 'diagram_fixed', 'message': 'Auto-fixed Mermaid syntax issues'})}\n\n"
+                    else:
+                        # If still invalid, regenerate with stricter prompt
+                        yield f"data: {json.dumps({'status': 'diagram_regenerating', 'message': 'Regenerating diagram due to syntax issues...'})}\n\n"
+                        
+                        # Add validation errors to the prompt for better generation
+                        strict_prompt = third_system_prompt + f"""
+
+CRITICAL: The previous generation had these syntax errors:
+{chr(10).join(errors)}
+
+You MUST fix these issues in your output. Follow the syntax rules exactly.
+"""
+                        
+                        mermaid_code_retry = ""
+                        async for chunk in o4_service.call_o4_api_stream(
+                            system_prompt=strict_prompt,
+                            data={
+                                "explanation": explanation,
+                                "component_mapping": component_mapping_text,
+                                "instructions": body.instructions,
+                            },
+                            api_key=body.api_key,
+                            reasoning_effort="low",
+                        ):
+                            mermaid_code_retry += chunk
+                            yield f"data: {json.dumps({'status': 'diagram_retry_chunk', 'chunk': chunk})}\n\n"
+                        
+                        mermaid_code = mermaid_code_retry.replace("```mermaid", "").replace("```", "")
+                        
+                        # Validate again
+                        is_valid_retry, errors_retry, warnings_retry = validator.validate(mermaid_code)
+                        if not is_valid_retry:
+                            # Final attempt with auto-fix
+                            mermaid_code = fix_common_mermaid_issues(mermaid_code)
+
                 processed_diagram = process_click_events(
                     mermaid_code, body.username, body.repo, default_branch
                 )
@@ -253,9 +302,15 @@ async def generate_stream(request: Request, body: ApiRequest):
                     'explanation': explanation,
                     'mapping': component_mapping_text
                 })}\n\n"
+                
+                # Send final SSE closing
+                yield f"data: [DONE]\n\n"
 
             except Exception as e:
-                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                error_message = str(e)
+                print(f"Error in event_generator: {error_message}")
+                yield f"data: {json.dumps({'error': error_message})}\n\n"
+                yield f"data: [DONE]\n\n"
 
         return StreamingResponse(
             event_generator(),
@@ -267,4 +322,5 @@ async def generate_stream(request: Request, body: ApiRequest):
             },
         )
     except Exception as e:
+        print(f"Error in generate_stream: {str(e)}")
         return {"error": str(e)}

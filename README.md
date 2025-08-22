@@ -5,9 +5,19 @@
 
 # GitDiagram (한국어)
 
+**Version 1.1.0** - 2025.08.22 업데이트
+
 GitHub 저장소를 불러와 구조를 분석하고, 단 몇 초 만에 상호작용 가능한 Mermaid.js 시스템 다이어그램으로 시각화합니다.
 
-[English README](./README.en.md)
+[English README](./README.en.md) | [CHANGELOG](./CHANGELOG.md)
+
+## 🎉 최신 업데이트 (v1.1.0)
+- **Mermaid v11.4.1 완전 호환**: "Syntax error" 문제 완전 해결
+- **안정성 대폭 향상**: HTTP2 프로토콜 에러, JSON 파싱 에러 수정
+- **스마트 자동 수정**: 문법 오류 자동 감지 및 수정 시스템
+- **향상된 에러 처리**: 명확한 오류 메시지와 복구 메커니즘
+
+자세한 변경사항은 [CHANGELOG.md](./CHANGELOG.md)를 참조하세요.
 
 - URL 바로 사용: 어떤 GitHub URL이든 `github` 대신 `diagram`으로 바꿔 접속하면 해당 저장소 다이어그램 페이지로 이동합니다.
 - 예: `https://github.com/user/repo` → `https://diagram.com/user/repo` (서비스 도메인/배포 환경에 따라 상이)
@@ -28,11 +38,17 @@ GitHub 저장소를 불러와 구조를 분석하고, 단 몇 초 만에 상호�
 - 분석: PostHog, api-analytics
 
 ## 🔎 핵심 로직
-프롬프트 파이프라인(3단계)으로 Mermaid v11.4.1 문법을 지키는 안정적인 다이어그램을 생성합니다.
+프롬프트 파이프라인(3단계)으로 **Mermaid v11.4.1 문법**을 지키는 안정적인 다이어그램을 생성합니다.
 
-1) 설명 생성 → 2) 컴포넌트-경로 매핑 → 3) Mermaid 코드 생성
+1) 설명 생성 → 2) 컴포넌트-경로 매핑 → 3) Mermaid 코드 생성 → **4) 자동 검증 및 수정**
 
-중요 제약/안정화:
+### 🛡️ 품질 보증 시스템 (v1.1.0 신규)
+- **실시간 문법 검증**: 생성된 Mermaid 코드의 v11.4.1 호환성 자동 확인
+- **자동 수정 기능**: 일반적인 문법 오류(따옴표, 공백, 특수문자 등) 자동 수정
+- **재생성 메커니즘**: 수정 불가능한 오류 발생 시 더 엄격한 프롬프트로 재생성
+- **상세 로깅**: 디버깅을 위한 종합적인 에러 추적 시스템
+
+### 중요 제약/안정화
 - 지원 타입만 사용(graph/flowchart, sequenceDiagram, classDiagram, stateDiagram(-v2), erDiagram, journey, gantt, pie, mindmap, timeline, gitGraph). 불확실 시 `graph TD`로 폴백.
 - 특수문자/공백 라벨은 반드시 따옴표로 감싸기.
 - subgraph 선언에는 클래스 직접 지정 금지.
